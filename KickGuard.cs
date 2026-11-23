@@ -48,7 +48,7 @@ public class KickGuardConfig : BasePluginConfig
 public class KickGuard : BasePlugin, IPluginConfig<KickGuardConfig>
 {
     public override string ModuleName => "KickGuard";
-    public override string ModuleVersion => "2.11.0";
+    public override string ModuleVersion => "2.12.0";
     public override string ModuleAuthor => "Claude";
     public override string ModuleDescription => "Başkalarını sunucudan çıkmaya zorlayan oyunculara uyarı ve yazı susturma (gag) uygular.";
 

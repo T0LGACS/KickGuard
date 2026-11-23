@@ -48,11 +48,13 @@ public class KickDetector
     // Vs atanlara karşı savunma cümleleri: "gidin özel sunucu kiralayın", "gidin atölye haritasında atın"
     private static readonly string[] Defensive = { "kirala", "atolye", "ozelsunucu", "esporcu" };
 
-    private readonly HashSet<string> _imp, _ask, _askWords;
+    private static readonly System.Text.RegularExpressions.Regex VsNow = new("^at(iy?o(r|ru)?[zx]|i?caz|acaz|[ai]cagiz|iaz)$");
+    private readonly HashSet<string> _imp, _ask, _askWords, _vs;
     private readonly List<string> _extra;
 
     public KickDetector(IEnumerable<string>? extraPhrases)
     {
+        _vs = VsWords.Select(TextMatch.Normalize).ToHashSet();   // mesaj sadeleşir ("1v1" -> "ivi"), liste de sadeleşmeli
         _imp = Imperatives.Select(TextMatch.Normalize).ToHashSet();
         _ask = AskStems.Select(TextMatch.Normalize).ToHashSet();
         _askWords = AskWords.Select(TextMatch.Normalize).ToHashSet();
@@ -102,9 +104,12 @@ public class KickDetector
                 return t[i] + " " + t[i + 1];
             if ((t[i] == "musade" || t[i] == "musaade" || t[i] == "musaide") && i + 2 < t.Count && t[i + 1] == "var" && (t[i + 2] == "mi" || t[i + 2] == "mu"))
                 return t[i] + " var " + t[i + 2];
+            // "vs atıyoz", "1v1 atıyoruzz" (2026-11-23, kullanıcı: kayıtta 30 kez, hepsi "çıkın" demek). Şimdiki ve gelecek zaman 1. çoğul
+            // ("vs atcaz" da, kullanıcı 2026-11-23); "vs atıyorsanız", "vs atacaksanız", "vs mi atıyorsunuz" serbest
+            if (_vs.Contains(t[i]) && i + 1 < t.Count && VsNow.IsMatch(t[i + 1])) return t[i] + " " + t[i + 1];
         }
         // "this server for not vs", "vs yasak" gibi itirazlar sayılmaz
-        if (t.Any(VsWords.Contains) && t.Any(PleaseWords.Contains) && !t.Any(Negations.Contains)) return "vs + pls";
+        if (t.Any(_vs.Contains) && t.Any(PleaseWords.Contains) && !t.Any(Negations.Contains)) return "vs + pls";
         var compact = string.Concat(t);
         foreach (var p in _extra) if (TextMatch.ContainsNear(compact, p)) return p;
         return null;
